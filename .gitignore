@@ -1,0 +1,31 @@
+# Claude / harness working files
+.claude/
+.remember/
+.vb
+
+# Organization standard (not for public distribution)
+mkdocs-organization-documentation-standard.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.eggs/
+
+# MkDocs build output
+site/
+
+# Editor
+.DS_Store
+.idea/
+*.swp
+*.swo
+.vscode/
+
+# Env
+.env
+.env.local

@@ -1,0 +1,34 @@
+# Organization documentation standard — pinned dependencies
+# Generated: 2026-06-06
+# Update intentionally; test before bumping versions.
+# Install: pip install -r requirements-docs.txt
+# Build:   mkdocs build --strict
+
+# Core
+mkdocs==1.6.1
+mkdocs-material==9.7.6
+
+# API reference (uncomment for Python packages)
+# mkdocstrings==1.0.4
+# mkdocstrings-python==2.0.4
+# mkdocs-autorefs==1.4.4
+
+# Navigation helpers (uncomment for generated reference pages)
+# mkdocs-gen-files==0.6.1
+# mkdocs-literate-nav
+# mkdocs-section-index
+
+# Git metadata (page freshness + authorship)
+mkdocs-git-revision-date-localized-plugin==1.5.3
+mkdocs-git-authors-plugin
+
+# UX plugins
+mkdocs-redirects
+mkdocs-glightbox
+
+# Versioning (uncomment when using mike for multi-version docs)
+# mike
+
+# Optional content plugins (uncomment as needed)
+# mkdocs-macros-plugin
+# mkdocs-minify-html-plugin

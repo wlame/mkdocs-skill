@@ -1,0 +1,61 @@
+# Organization documentation standard — GitHub Actions workflow
+# File: .github/workflows/docs.yml
+#
+# Triggers: push to main (build + deploy), pull_request (build-only check).
+# Deploys to GitHub Pages via gh-deploy.
+#
+# Prerequisites:
+#   GitHub repo Settings → Pages → Source → GitHub Actions
+
+name: docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'requirements-docs.txt'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'requirements-docs.txt'
+
+# Required for mkdocs gh-deploy to push the built site to gh-pages branch
+permissions:
+  contents: write
+
+jobs:
+  docs:
+    name: Build and deploy docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history required for git-revision-date-localized and git-authors plugins
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+
+      - name: Install docs dependencies
+        run: pip install -r requirements-docs.txt
+
+      - name: Build docs (strict)
+        run: mkdocs build --strict
+        env:
+          CI: true
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: mkdocs gh-deploy --force
+        env:
+          CI: true

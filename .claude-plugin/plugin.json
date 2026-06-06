@@ -1,0 +1,8 @@
+{
+  "name": "ghdoc",
+  "description": "Generates a complete, opinionated MkDocs documentation site for a GitHub repository — including structured pages, Material theme, GitHub Actions CI, and GitHub Pages setup instructions. Designed for organization-wide documentation consistency.",
+  "author": {
+    "name": "wlame",
+    "email": "vvlame@gmail.com"
+  }
+}
