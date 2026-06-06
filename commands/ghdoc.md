@@ -17,6 +17,41 @@ Parse `$ARGUMENTS` for these optional overrides:
 
 ---
 
+## Pre-check: Existing docs detection
+
+Before doing anything else, check whether a `docs/` directory already exists:
+
+```bash
+find docs -name "*.md" 2>/dev/null | head -50
+```
+
+**If `docs/` contains markdown files:**
+
+Stop and notify the user prominently:
+
+> **Found existing documentation** — `docs/` contains N markdown files.
+> Reading all of them now to preserve their knowledge before generating the new site structure.
+>
+> Files found:
+> - `docs/some-file.md` (N lines)
+> - …
+>
+> This content will be carefully integrated into the new docs. Nothing will be discarded.
+
+Then launch one Explore agent to read every existing markdown file in `docs/` and return a structured summary:
+
+"Read every markdown file under `docs/`. For each file return: (1) the file path, (2) a one-paragraph summary of what it covers, (3) any content that is non-obvious or not derivable from source code — things like design rationale, undocumented edge cases, known issues, operational lessons, migration notes, or any prose that represents hard-won knowledge. Return the full text of any section that contains such non-obvious content verbatim. Finally, list any `mkdocs.yml` if present and its full nav structure."
+
+Save these findings as a section in `.ghdoc-analysis.md` (see below). Then ask the user:
+
+> I found [N] existing doc pages. I'll read and preserve all the knowledge in them and integrate it into the new structure. Does that sound right, or are there specific files you want to exclude?
+
+Wait for the user's reply before proceeding to Phase 1.
+
+**If `docs/` does not exist or contains no markdown files:** proceed directly to Phase 1 with no interruption.
+
+---
+
 ## Phase 1: Repository Analysis
 
 **Goal**: Understand what the project is, what it does, and what doc sections it needs. Then save findings to disk so all downstream agents can read them.
@@ -57,9 +92,15 @@ After all 4 agents return, synthesize their findings. Read any key files they id
 ## Concept inventory
 <Synthesized list of all significant named concepts: command names, config keys,
 API endpoints, components, important proper nouns — one per line>
+
+## Existing docs (if found)
+<For each existing markdown file: path, summary, and verbatim text of any non-obvious
+knowledge — design rationale, edge cases, operational lessons, migration notes, anything
+not directly derivable from reading the source code. Mark clearly which file each came from.
+If no existing docs were found, write: "No existing docs detected.">
 ```
 
-The concept inventory section is critical — it is passed to the cross-linking agent in Phase 5.
+The concept inventory and existing docs sections are both critical — they are passed to content agents in Phase 4 and the cross-linking agent in Phase 5.
 
 ---
 
@@ -116,6 +157,14 @@ Present the proposed structure to the user as a concrete nav tree with real slug
 
 If `color-scheme=<name>` was passed in `$ARGUMENTS`, highlight it as pre-selected.
 
+**If existing docs were found**, include this notice before asking for confirmation:
+
+> **Existing docs will be integrated** — the content from the following files will be preserved and merged into the new structure:
+> - `docs/<file>.md` → will be merged into `<target page>`
+> - …
+>
+> Any non-obvious knowledge (design rationale, edge cases, operational notes) found in existing pages is recorded in `.ghdoc-analysis.md` and will be given to the content agents. If an existing page maps directly to a new page, its content takes priority over generated boilerplate.
+
 **STOP and wait for user confirmation.** Ask:
 1. Does the proposed nav structure look right? Any pages to add, remove, or rename?
 2. Are the proposed use-case slugs correct? Add, remove, or rename any?
@@ -169,12 +218,15 @@ Then write all MkDocs infrastructure:
 
 **Goal**: Write all confirmed doc pages with real, accurate content from Phase 1 findings.
 
-Before launching content agents, read `.ghdoc-analysis.md` to have the full Phase 1 inventory in scope.
+Before launching content agents, read `.ghdoc-analysis.md` to have the full Phase 1 inventory in scope — including the "Existing docs" section if present.
 
 Launch parallel agents, one per major section. Each agent prompt must:
 1. Start with: "Read `skills/ghdoc/references/page-templates.md` for the template structure to follow."
 2. Include the relevant section of `.ghdoc-analysis.md` as inline context (paste the specific section text into the prompt).
-3. Specify exactly which files to write and their paths.
+3. Include the full "Existing docs" section from `.ghdoc-analysis.md` in every agent prompt.
+4. Specify exactly which files to write and their paths.
+
+**Merge rule for existing content**: if an existing page maps to a new page you are writing, do not start from the template — start from the existing content and improve/extend it. Preserve all non-obvious knowledge verbatim (move it into the appropriate section of the new page structure). Only replace boilerplate, outdated install instructions, or content that is clearly superseded by what was found in the source analysis. When in doubt, keep the existing prose and add new content around it.
 
 **Agent assignments** (adapt to confirmed structure, one agent per group):
 
