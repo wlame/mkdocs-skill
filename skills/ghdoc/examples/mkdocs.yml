@@ -1,4 +1,6 @@
+# ghdoc: version=<SKILL VERSION> engine=<ENGINE> color-scheme=<SCHEME> versioned=<yes|no> updated=<YYYY-MM-DD>
 # Organization documentation standard — mkdocs.yml baseline
+# The line above is the ghdoc state marker (see SKILL.md) — fill it in, keep it first.
 # Replace all <PLACEHOLDERS> before use.
 # Run: mkdocs build --strict
 
