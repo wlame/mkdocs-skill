@@ -1,6 +1,6 @@
 ---
 description: Generate a complete MkDocs documentation site for this repository — structured pages, Material theme, GitHub Actions CI, and GitHub Pages setup instructions
-argument-hint: "[color-scheme=indigo|teal|blue-grey|deep-purple|orange] [versioned=yes|no] [api=yes|no] [override: <free text instructions>]"
+argument-hint: "[color-scheme=indigo|teal|blue-grey|deep-purple|orange] [versioned=yes|no] [api=yes|no] [engine=mkdocs|properdocs] [override: <free text instructions>]"
 ---
 
 # ghdoc — Documentation Site Generator
@@ -13,7 +13,19 @@ Parse `$ARGUMENTS` for these optional overrides:
 - `color-scheme=<name>` — override the default color scheme (indigo | teal | blue-grey | deep-purple | orange)
 - `versioned=yes` — enable mike versioning
 - `api=yes` — force API reference generation even if not auto-detected
+- `engine=<name>` — site generator engine (default `mkdocs`). See the Engines table in
+  `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/references/mkdocs-standard.md` — `properdocs` swaps in the
+  ProperDocs fork + MaterialX theme; all generated files use the engine's package, CLI, and theme
+  names from that table. Warn the user that `engine=properdocs` + `versioned=yes` is unsupported
+  (mike compatibility unverified as of 2026-07).
 - `override: <text>` — free-form instructions that override any defaults
+
+**Plugin file paths**: every reference below to `${CLAUDE_PLUGIN_ROOT}/...` is a file inside this
+plugin's installation directory — never resolve those paths relative to the target repository.
+
+**Working file**: all analysis findings go to `.claude/ghdoc-analysis.md` in the target repo.
+Ensure `.claude/` is listed in the repo's `.gitignore` before writing it (add the entry if missing) —
+this file must never be committed.
 
 ---
 
@@ -42,7 +54,7 @@ Then launch one Explore agent to read every existing markdown file in `docs/` an
 
 "Read every markdown file under `docs/`. For each file return: (1) the file path, (2) a one-paragraph summary of what it covers, (3) any content that is non-obvious or not derivable from source code — things like design rationale, undocumented edge cases, known issues, operational lessons, migration notes, or any prose that represents hard-won knowledge. Return the full text of any section that contains such non-obvious content verbatim. Finally, list any `mkdocs.yml` if present and its full nav structure."
 
-Save these findings as a section in `.ghdoc-analysis.md` (see below). Then ask the user:
+Save these findings as a section in `.claude/ghdoc-analysis.md` (see below). Then ask the user:
 
 > I found [N] existing doc pages. I'll read and preserve all the knowledge in them and integrate it into the new structure. Does that sound right, or are there specific files you want to exclude?
 
@@ -72,7 +84,7 @@ Launch 4 Explore agents in parallel. Each agent must return structured findings:
 
 After all 4 agents return, synthesize their findings. Read any key files they identify.
 
-**Save findings to `.ghdoc-analysis.md`** in the repo root. Structure it as:
+**Save findings to `.claude/ghdoc-analysis.md`** in the repo root. Structure it as:
 
 ```markdown
 # ghdoc analysis — <project name>
@@ -163,7 +175,7 @@ If `color-scheme=<name>` was passed in `$ARGUMENTS`, highlight it as pre-selecte
 > - `docs/<file>.md` → will be merged into `<target page>`
 > - …
 >
-> Any non-obvious knowledge (design rationale, edge cases, operational notes) found in existing pages is recorded in `.ghdoc-analysis.md` and will be given to the content agents. If an existing page maps directly to a new page, its content takes priority over generated boilerplate.
+> Any non-obvious knowledge (design rationale, edge cases, operational notes) found in existing pages is recorded in `.claude/ghdoc-analysis.md` and will be given to the content agents. If an existing page maps directly to a new page, its content takes priority over generated boilerplate.
 
 **STOP and wait for user confirmation.** Ask:
 1. Does the proposed nav structure look right? Any pages to add, remove, or rename?
@@ -178,25 +190,36 @@ Do NOT proceed to Phase 3 until the user explicitly confirms.
 
 ## Phase 3: Infrastructure Files
 
-**Start by reading two reference files** (do this before writing any files):
-- Read `skills/ghdoc/references/mkdocs-standard.md` — for plugin versions, feature flags, and CI workflow template
-- Read `skills/ghdoc/references/color-schemes.md` — for the exact Material palette YAML for the selected color scheme
+**Start by reading these plugin files** (do this before writing any files):
+- Read `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/references/mkdocs-standard.md` — for the Engines table, plugin versions, and feature flags
+- Read `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/references/color-schemes.md` — for the exact Material palette YAML for the selected color scheme
+- Read `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/examples/mkdocs.yml` — the baseline config template
+- Read `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/examples/requirements-docs.txt` — the pinned dependency template
+- Read the workflow template matching the versioning choice:
+  - `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/examples/docs-workflow.yml` (default, unversioned)
+  - `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/examples/docs-versioned-workflow.yml` (if `versioned=yes`)
 
-Then write all MkDocs infrastructure:
+**Engine substitution**: if `engine=properdocs` was selected, apply the ProperDocs row of the
+Engines table to every generated file — pip packages, CLI binary name, config filename
+(`properdocs.yml` instead of `mkdocs.yml`), and theme name/package — instead of the MkDocs
+defaults. The file formats are otherwise identical.
+
+Then write all docs infrastructure:
 
 **3a. Write `mkdocs.yml`** using the confirmed structure and color scheme.
-- Use the exact nav from the confirmed proposal (with real page slugs — no placeholders)
-- Apply the selected palette YAML verbatim from `references/color-schemes.md`
+- Start from the example template; use the exact nav from the confirmed proposal (with real page slugs — no placeholders)
+- Apply the selected palette YAML verbatim from the color-schemes reference
 - Enable all baseline plugins from the standard: search, tags, privacy, git-revision-date-localized, git-authors, redirects, glightbox
+- Do NOT enable the `social` plugin by default — it requires imaging dependencies (see the template comment)
 - Add mkdocstrings if Python API was detected
 - Set `strict: true`
 - Detect repo remote: run `git remote get-url origin`. If it succeeds, set `repo_name` and `repo_url` from the output. If it fails or has no remote yet, set those fields to `<!-- TODO: set repo_url -->` and note this for the user.
 - Set fonts: `text: Inter, code: JetBrains Mono`
 - Add social links for any registries found (PyPI, Docker Hub, etc.)
 
-**3b. Write `requirements-docs.txt`** with pinned versions from the standard (read from `references/mkdocs-standard.md`). Uncomment mkdocstrings lines if Python API detected.
+**3b. Write `requirements-docs.txt`** from the example template — keep every version pin exactly as in the template. Uncomment mkdocstrings lines if Python API detected; uncomment `mike` if `versioned=yes`.
 
-**3c. Write `.github/workflows/docs.yml`** — use the workflow template from `references/mkdocs-standard.md` verbatim, adapting only the trigger paths if the docs are in a non-standard location.
+**3c. Write `.github/workflows/docs.yml`** — copy the selected workflow template verbatim, adapting only the trigger paths if the docs are in a non-standard location. The two templates use different GitHub Pages publishing modes; never mix them (unversioned = Pages artifact deploy, versioned = mike pushing to the `gh-pages` branch).
 
 **3d. Write `docs/assets/stylesheets/extra.css`** with minimal org branding:
 ```css
@@ -212,18 +235,34 @@ Then write all MkDocs infrastructure:
 
 **3e. Create placeholder file `docs/assets/.gitkeep`** so the assets directory is tracked by git. If a logo path was provided by the user, note its expected location in a comment.
 
+**3f. Offer `just` recipes (optional)** — if the repo has a `justfile`, offer to append docs recipes
+(ask the user; skip silently if there is no justfile):
+
+```just
+# Build the docs site (strict — fails on any warning)
+docs-build:
+    uv run --no-project --with-requirements=requirements-docs.txt mkdocs build --strict
+
+# Serve the docs locally with live reload
+docs-serve:
+    uv run --no-project --with-requirements=requirements-docs.txt mkdocs serve
+```
+
+Substitute the engine CLI name if `engine=properdocs`. If `uv` is not used in the repo, use
+`pip install -r requirements-docs.txt && mkdocs ...` inside the recipe instead.
+
 ---
 
 ## Phase 4: Content Generation
 
 **Goal**: Write all confirmed doc pages with real, accurate content from Phase 1 findings.
 
-Before launching content agents, read `.ghdoc-analysis.md` to have the full Phase 1 inventory in scope — including the "Existing docs" section if present.
+Before launching content agents, read `.claude/ghdoc-analysis.md` to have the full Phase 1 inventory in scope — including the "Existing docs" section if present.
 
 Launch parallel agents, one per major section. Each agent prompt must:
-1. Start with: "Read `skills/ghdoc/references/page-templates.md` for the template structure to follow."
-2. Include the relevant section of `.ghdoc-analysis.md` as inline context (paste the specific section text into the prompt).
-3. Include the full "Existing docs" section from `.ghdoc-analysis.md` in every agent prompt.
+1. Start with: "Read `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/references/page-templates.md` for the template structure to follow."
+2. Include the relevant section of `.claude/ghdoc-analysis.md` as inline context (paste the specific section text into the prompt).
+3. Include the full "Existing docs" section from `.claude/ghdoc-analysis.md` in every agent prompt.
 4. Specify exactly which files to write and their paths.
 
 **Merge rule for existing content**: if an existing page maps to a new page you are writing, do not start from the template — start from the existing content and improve/extend it. Preserve all non-obvious knowledge verbatim (move it into the appropriate section of the new page structure). Only replace boilerplate, outdated install instructions, or content that is clearly superseded by what was found in the source analysis. When in doubt, keep the existing prose and add new content around it.
@@ -279,9 +318,9 @@ Each agent writes directly to disk. Content rules for every agent:
 
 ## Phase 5: Cross-Link Verification
 
-Read `.ghdoc-analysis.md` to get the concept inventory. Then launch one agent:
+Read `.claude/ghdoc-analysis.md` to get the concept inventory. Then launch one agent:
 
-"Read `.ghdoc-analysis.md` to get the full concept inventory for this project. Then read all markdown files in `docs/`. For each concept in the inventory (command names, config keys, API endpoints, component names, proper nouns), find every page that mentions it without a link to the page where it is defined. Add markdown links for these. Then: (1) check that every nav entry in `mkdocs.yml` has a corresponding file — report any missing; (2) check that every `[text](relative-path)` in any docs page resolves to a real file — report and fix any broken links; (3) add a `## Related pages` section to any page that currently has none. Return a summary: links added (count and pages), broken links fixed, missing nav files."
+"Read `.claude/ghdoc-analysis.md` to get the full concept inventory for this project. Then read all markdown files in `docs/`. For each concept in the inventory (command names, config keys, API endpoints, component names, proper nouns), find every page that mentions it without a link to the page where it is defined. Add markdown links for these. Then: (1) check that every nav entry in `mkdocs.yml` has a corresponding file — report any missing; (2) check that every `[text](relative-path)` in any docs page resolves to a real file — report and fix any broken links; (3) add a `## Related pages` section to any page that currently has none. Return a summary: links added (count and pages), broken links fixed, missing nav files."
 
 After the agent completes, show the summary to the user.
 
@@ -292,25 +331,31 @@ After the agent completes, show the summary to the user.
 **Build verification** (run these commands and report results):
 
 ```bash
-# Check if uv is available; use pip as fallback
+# Prefer uv (no venv needed); fall back to pip
 if command -v uv &>/dev/null; then
-  uv pip install -r requirements-docs.txt 2>&1 | tail -5
+  uv run --no-project --with-requirements=requirements-docs.txt mkdocs build --strict 2>&1
 else
   pip install -r requirements-docs.txt 2>&1 | tail -5
+  mkdocs build --strict 2>&1
 fi
-mkdocs build --strict 2>&1
 ```
+
+(Substitute the engine CLI name for `mkdocs` if `engine=properdocs`.)
 
 Report any build errors with suggested fixes before showing the setup guide.
 
-**GitHub Pages setup guide** (print this, substituting actual values detected from the repo remote):
+**GitHub Pages setup guide** — print the variant matching the versioning choice, substituting
+actual values detected from the repo remote. The Pages "Source" setting differs between the two
+variants and using the wrong one means the site never publishes.
+
+Default (unversioned) variant:
 
 ```
 ## How to Enable GitHub Pages
 
 1. Stage and commit the docs:
    git add docs/ mkdocs.yml requirements-docs.txt .github/workflows/docs.yml
-   git commit -m "Add MkDocs documentation site"
+   git commit -m "Add documentation site"
    git push
 
 2. Enable GitHub Pages:
@@ -320,22 +365,47 @@ Report any build errors with suggested fixes before showing the setup guide.
 3. The docs workflow runs automatically on the next push to main.
    Site will be published at: https://<org>.github.io/<repo>/
 
-4. First deploy (optional — do locally before pushing):
-   uv pip install -r requirements-docs.txt   # or: pip install -r requirements-docs.txt
-   mkdocs gh-deploy --force
-
-5. Preview locally at any time:
-   mkdocs serve
+4. Preview locally at any time:
+   uv run --no-project --with-requirements=requirements-docs.txt mkdocs serve
    Open: http://localhost:8000
 
-6. Add a logo (optional):
+5. Add a logo (optional):
    Place logo at: docs/assets/logo.svg
    Update mkdocs.yml → theme.logo: assets/logo.svg
 ```
 
+Versioned (`versioned=yes`) variant:
+
+```
+## How to Enable GitHub Pages (versioned docs with mike)
+
+1. Stage and commit the docs:
+   git add docs/ mkdocs.yml requirements-docs.txt .github/workflows/docs.yml
+   git commit -m "Add versioned documentation site"
+   git push
+
+2. Publish the first version (creates the gh-pages branch):
+   uv run --no-project --with-requirements=requirements-docs.txt \
+     mike deploy --push --update-aliases <current-version> latest
+   uv run --no-project --with-requirements=requirements-docs.txt \
+     mike set-default --push latest
+
+3. Enable GitHub Pages:
+   Go to: https://github.com/<org>/<repo>/settings/pages
+   Source → Deploy from a branch → gh-pages / (root)
+   (NOT "GitHub Actions" — mike publishes via the branch.)
+
+4. From now on, pushing a v* tag deploys that version automatically.
+   Site will be published at: https://<org>.github.io/<repo>/
+
+5. Preview locally at any time:
+   uv run --no-project --with-requirements=requirements-docs.txt mike serve
+   Open: http://localhost:8000
+```
+
 If the repo remote was not detected in Phase 3, remind the user to fill in `repo_url` and `repo_name` in `mkdocs.yml` before pushing.
 
-Finally, delete `.ghdoc-analysis.md` (it was a working file, not part of the docs).
+Finally, delete `.claude/ghdoc-analysis.md` (it was a working file, not part of the docs).
 
 ---
 
@@ -345,7 +415,7 @@ Apply these to every generated page:
 
 - Write from actual source analysis — no generic boilerplate.
 - Every code example must be copy-pasteable using real command/function names.
-- CLI flags must match source exactly (read from `.ghdoc-analysis.md`, not from memory).
+- CLI flags must match source exactly (read from `.claude/ghdoc-analysis.md`, not from memory).
 - Config keys must match actual schemas exactly.
 - Use Mermaid diagrams for any architecture with more than 2 components.
 - Prefer tabs for the same operation across install methods, OS, or language variants.

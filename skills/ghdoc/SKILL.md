@@ -1,7 +1,7 @@
 ---
 name: ghdoc
 description: This skill should be used when the user asks to "add documentation", "set up docs", "create a docs site", "add mkdocs", "generate github pages docs", "scaffold documentation", "add a documentation site for github pages", or mentions wanting MkDocs, Material theme, or unified documentation. Provides the organization documentation standard, unified page structure, color scheme options, and page templates for generating complete documentation sites.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # ghdoc — Organization Documentation Standard
@@ -14,7 +14,22 @@ This skill encodes the organization-wide documentation standard for MkDocs + Mat
 **Theme**: Material with light/dark toggle (auto-detected from OS preference)
 **Fonts**: Inter (text) + JetBrains Mono (code)
 **Build**: `mkdocs build --strict` in CI — zero warnings allowed
-**Deploy**: `mkdocs gh-deploy --force` on push to main
+**Deploy**: GitHub Pages via `actions/deploy-pages` (unversioned) or `mike` + gh-pages branch (versioned)
+
+## Engines
+
+The site generator is a parameter, not a hardcoded choice. All generated files (config,
+requirements, workflow, just recipes) take their package, CLI, and theme names from this table:
+
+| Engine | pip packages | CLI binary | Config file | Theme name | Status |
+|---|---|---|---|---|---|
+| `mkdocs` (default) | `mkdocs` + `mkdocs-material` | `mkdocs` | `mkdocs.yml` | `material` | Org baseline — pinned, proven |
+| `properdocs` | `properdocs` + `mkdocs-materialx` | `properdocs` | `properdocs.yml` | `materialx` | Opt-in — drop-in MkDocs fork; mike versioning unverified |
+
+ProperDocs is the community continuation fork of MkDocs (March 2026, led by the former top MkDocs
+maintainer) and MaterialX the matching continuation of the Material theme. Config files and plugins
+are compatible; switching engines later is a name swap, not a migration. See the "Engines and
+succession" section of `references/mkdocs-standard.md` for the full context and migration triggers.
 
 ## Unified Page Structure
 

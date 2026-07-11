@@ -2,9 +2,7 @@
 .claude/
 .remember/
 .vb
-
-# Organization standard (not for public distribution)
-mkdocs-organization-documentation-standard.md
+.vb.lock
 
 # Python
 __pycache__/

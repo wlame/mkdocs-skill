@@ -1,34 +1,41 @@
 # Organization documentation standard — pinned dependencies
-# Generated: 2026-06-06
+# Versions verified against PyPI: 2026-07-11
 # Update intentionally; test before bumping versions.
 # Install: pip install -r requirements-docs.txt
 # Build:   mkdocs build --strict
+#
+# Engine note: the org baseline is MkDocs + Material (pinned below).
+# The `properdocs` + `mkdocs-materialx` pair is the approved fallback engine
+# (see references/mkdocs-standard.md, "Engines") — do not mix the two stacks.
 
 # Core
 mkdocs==1.6.1
 mkdocs-material==9.7.6
 
 # API reference (uncomment for Python packages)
-# mkdocstrings==1.0.4
-# mkdocstrings-python==2.0.4
+# mkdocstrings==1.0.5
+# mkdocstrings-python==2.0.5
 # mkdocs-autorefs==1.4.4
 
 # Navigation helpers (uncomment for generated reference pages)
 # mkdocs-gen-files==0.6.1
-# mkdocs-literate-nav
-# mkdocs-section-index
+# mkdocs-literate-nav==0.6.3
+# mkdocs-section-index==0.3.12
 
 # Git metadata (page freshness + authorship)
 mkdocs-git-revision-date-localized-plugin==1.5.3
-mkdocs-git-authors-plugin
+mkdocs-git-authors-plugin==0.10.0
 
 # UX plugins
-mkdocs-redirects
-mkdocs-glightbox
+mkdocs-redirects==1.2.3
+mkdocs-glightbox==0.5.2
 
 # Versioning (uncomment when using mike for multi-version docs)
-# mike
+# mike==2.2.0
 
 # Optional content plugins (uncomment as needed)
-# mkdocs-macros-plugin
-# mkdocs-minify-html-plugin
+# mkdocs-macros-plugin==1.5.0
+
+# Social cards (uncomment only with the `social` plugin enabled; needs system
+# cairo libs in CI — see the docs workflow for the apt packages)
+# mkdocs-material[imaging]==9.7.6

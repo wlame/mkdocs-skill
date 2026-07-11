@@ -1,6 +1,8 @@
 {
   "name": "ghdoc",
+  "version": "1.1.0",
   "description": "Generates a complete, opinionated MkDocs documentation site for a GitHub repository — including structured pages, Material theme, GitHub Actions CI, and GitHub Pages setup instructions. Designed for organization-wide documentation consistency.",
+  "homepage": "https://github.com/wlame/mkdocs-skill",
   "author": {
     "name": "wlame",
     "email": "vvlame@gmail.com"

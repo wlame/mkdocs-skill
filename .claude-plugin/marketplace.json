@@ -6,12 +6,12 @@
   },
   "metadata": {
     "description": "Plugins by wlame",
-    "homepage": "https://github.com/wlame/ghdoc-skill"
+    "homepage": "https://github.com/wlame/mkdocs-skill"
   },
   "plugins": [
     {
       "name": "ghdoc",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": ".",
       "description": "Generates a complete MkDocs documentation site for any GitHub repository — structured pages, Material theme, GitHub Actions CI, and GitHub Pages setup"
     }

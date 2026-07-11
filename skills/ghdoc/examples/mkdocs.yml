@@ -63,8 +63,10 @@ plugins:
   - search
   - tags
   - privacy
-  - social:
-      enabled: !ENV [CI, false]   # Only generate social cards in CI
+  # social cards are OPTIONAL — enabling them requires mkdocs-material[imaging]
+  # plus system cairo libs in CI (see requirements-docs.txt). Off by default.
+  # - social:
+  #     enabled: !ENV [CI, false]
   - git-revision-date-localized:
       enable_creation_date: true
       type: date
@@ -116,7 +118,6 @@ markdown_extensions:
   - pymdownx.mark
   - pymdownx.caret
   - pymdownx.tilde
-  - pymdownx.critic
 
 nav:
   - Home: index.md

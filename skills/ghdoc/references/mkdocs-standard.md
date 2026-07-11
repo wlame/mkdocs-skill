@@ -1,7 +1,7 @@
 # MkDocs Documentation Standard for GitHub / Open-Source Repositories
 
 **Status:** Recommended baseline  
-**Date checked:** 2026-06-06  
+**Date checked:** 2026-07-11  
 **Primary recommendation:** MkDocs 1.6.x + Material for MkDocs 9.7.x + curated plugin/profile set  
 **Audience:** Engineering teams building a unified documentation experience across multiple repositories/products
 
@@ -32,9 +32,48 @@ This combination gives the best balance of:
 - reusable organization-wide configuration;
 - low adoption friction for engineering teams.
 
-The main strategic caveat is that **Material for MkDocs entered maintenance mode in November 2025**. The maintainers state that critical bug and security fixes will continue for at least 12 months, but no new features will be added because the team is focusing on **Zensical**. Therefore, the recommended strategy is:
+The main strategic caveat is that **both halves of the stack changed hands in 2025–2026**:
 
-> Use Material for MkDocs now as a stable, pinned baseline, but design the organization template so it can later migrate to Zensical or another compatible successor.
+- **Material for MkDocs entered maintenance mode in November 2025.** Critical bug and security
+  fixes continue (committed through ~Nov 2026), but no new features — the team is focusing on
+  **Zensical**, its ground-up Rust-based successor.
+- **MkDocs itself effectively forked in March 2026.** After ~2 years of upstream inactivity, the
+  original author privately started an incompatible "MkDocs 2.0" that would drop plugin support;
+  the resulting governance conflict led the most active maintainer (Oleh Prypin / oprypin) to launch
+  **ProperDocs** — a drop-in continuation fork of MkDocs 1.6.x (same config, same plugin API,
+  `pip install properdocs`). Background: https://fpgmaas.com/blog/collapse-of-mkdocs/
+
+Therefore, the recommended strategy is:
+
+> Use pinned MkDocs 1.6.x + Material 9.7.x now as a stable baseline, keep the generator an
+> **engine parameter** (see "Engines and succession" below), and re-evaluate ProperDocs/MaterialX
+> and Zensical on the quarterly migration test.
+
+---
+
+## Engines and succession
+
+The standard treats the site generator as data — one row per engine, consumed by all generated
+files (mkdocs.yml theme name, requirements, workflow, just recipes):
+
+| Engine | pip packages | CLI binary | Config file | Theme name | Status (2026-07) |
+|---|---|---|---|---|---|
+| `mkdocs` (default) | `mkdocs==1.6.1` + `mkdocs-material==9.7.6` | `mkdocs` | `mkdocs.yml` | `material` | Baseline. Frozen upstream but pinned, proven, universally documented. |
+| `properdocs` | `properdocs==1.6.7` + `mkdocs-materialx==10.1.8` | `properdocs` | `properdocs.yml` (reads `mkdocs.yml` as deprecated fallback) | `materialx` | Opt-in fallback. Drop-in fork pair; smoke-tested (build --strict passes, 2026-07-11); **mike versioning unverified** (jimporter/mike#259); young project (first release 2026-03). |
+| Zensical | — | — | — | — | Watch only. Official successor from the Material team (Rust rewrite, Nov 2025); feature parity still closing; not plugin-compatible enough for the baseline profile yet. |
+
+**Expected eventual direction:** ProperDocs + MaterialX (or Zensical, if parity lands first) will
+replace the frozen baseline. Because ProperDocs is a drop-in fork, switching is a name swap in
+generated files, not a content migration. Re-check on each quarterly migration test (section 21):
+
+- ProperDocs: release cadence and issue response since 2026-03; mike compatibility resolution;
+  mkdocstrings confirmation.
+- MaterialX: tracking of upstream Material security fixes after Material's ~Nov 2026 fix window closes.
+- Zensical: baseline plugin-profile parity (tags, redirects, git metadata, mkdocstrings, versioning).
+
+**Migrate the default engine when:** Material's security-fix window lapses with open CVEs, OR
+ProperDocs/MaterialX shows 6+ months of sustained maintenance and the mike + mkdocstrings boxes
+are checked, OR Zensical reaches full baseline-profile parity.
 
 ---
 
@@ -120,7 +159,8 @@ Use:
 
 ```text
 Primary baseline: Material for MkDocs 9.7.x
-Watch list: Zensical, ProperDocs + MaterialX
+Approved fallback engine: ProperDocs + MaterialX (opt-in via engine=properdocs)
+Watch list: Zensical
 Avoid for baseline: heavily custom themes, unmaintained themes, theme forks without clear maintenance history
 ```
 
@@ -395,8 +435,10 @@ plugins:
   - search
   - tags
   - privacy
-  - social:
-      enabled: !ENV [CI, false]
+  # social cards are optional — they require mkdocs-material[imaging] plus system
+  # cairo libraries in CI; enable deliberately, never by default:
+  # - social:
+  #     enabled: !ENV [CI, false]
   - git-revision-date-localized:
       enable_creation_date: true
       type: date
@@ -450,21 +492,23 @@ Use pinned dependencies for reproducible organization-wide builds.
 mkdocs==1.6.1
 mkdocs-material==9.7.6
 
-mkdocstrings==1.0.4
-mkdocstrings-python==2.0.4
+mkdocstrings==1.0.5
+mkdocstrings-python==2.0.5
 mkdocs-autorefs==1.4.4
 mkdocs-gen-files==0.6.1
-mkdocs-literate-nav
-mkdocs-section-index
+mkdocs-literate-nav==0.6.3
+mkdocs-section-index==0.3.12
 
 mkdocs-git-revision-date-localized-plugin==1.5.3
-mkdocs-git-authors-plugin
-mkdocs-redirects
-mkdocs-glightbox
-mkdocs-macros-plugin
-mkdocs-minify-html-plugin
-mike
+mkdocs-git-authors-plugin==0.10.0
+mkdocs-redirects==1.2.3
+mkdocs-glightbox==0.5.2
+mkdocs-macros-plugin==1.5.0
+mike==2.2.0
 ```
+
+Every entry is pinned — an unpinned line in a "pinned" file silently defeats the whole
+reproducibility goal. (Versions verified against PyPI 2026-07-11.)
 
 ### Better production approach
 
@@ -496,50 +540,28 @@ For a centralized documentation platform, unpinned versions create avoidable ris
 
 ## 10. GitHub Actions baseline
 
-```yaml
-name: docs
+Two workflow templates ship with this standard — use exactly one, chosen by the versioning model.
+**The GitHub Pages "Source" setting must match the workflow**; a mismatch builds green and never
+publishes:
 
-on:
-  push:
-    branches: [main]
-  pull_request:
+| Model | Template | Publishing mechanism | Pages Source setting |
+|---|---|---|---|
+| Unversioned (default) | `examples/docs-workflow.yml` | `actions/upload-pages-artifact` + `actions/deploy-pages` | **GitHub Actions** |
+| Versioned (mike) | `examples/docs-versioned-workflow.yml` | `mike deploy --push` to the `gh-pages` branch on `v*` tags | **Deploy from a branch → gh-pages** |
 
-permissions:
-  contents: write
+Shared rules for both:
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+- `fetch-depth: 0` on checkout — Git metadata plugins (authors, revision dates) need full history;
+- install from the locked `requirements-docs.txt`;
+- `mkdocs build --strict` gates every push and pull request;
+- least-privilege permissions: the artifact flow needs only `pages: write` + `id-token: write` on
+  the deploy job (`contents: read` elsewhere); only the mike flow needs `contents: write` because
+  it pushes a branch;
+- an external link check (`lychee`) runs non-blocking — internal links are already covered by
+  `--strict`, and external sites break for reasons unrelated to the repo;
+- do not use `mkdocs gh-deploy` in the artifact flow — it belongs to the branch-based model only.
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install docs dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-docs.txt
-
-      - name: Build docs strictly
-        run: mkdocs build --strict
-```
-
-For Git metadata plugins, `fetch-depth: 0` is important because shallow clones may not contain enough history to calculate page authorship and last modification dates correctly.
-
-For publishing to GitHub Pages without versioning:
-
-```yaml
-      - name: Deploy docs
-        if: github.ref == 'refs/heads/main'
-        run: mkdocs gh-deploy --force
-```
-
-For versioned docs with `mike`, prefer explicit release workflows:
+For versioned docs, the release flow mike performs on a `v1.4.x` tag:
 
 ```bash
 mike deploy --push --update-aliases 1.4 latest
@@ -1023,8 +1045,8 @@ Migrate when one of these becomes true:
 | Docusaurus | Medium/High | Strong React ecosystem and versioning; less Markdown-simple and less Python-native than MkDocs. |
 | VitePress / VuePress | Medium | Good modern frontend stack; less aligned with existing MkDocs/Python tooling. |
 | Docsify | Low/Medium | Simple runtime docs, but weaker for strict CI/static build governance. |
-| Zensical | Watch | Official successor direction from Material team; promising but should be validated against required features. |
-| ProperDocs + MaterialX | Watch | Compatibility-focused community continuation; promising but newer and should be validated before organization-wide adoption. |
+| Zensical | Watch | Official successor from the Material team (Rust rewrite, Nov 2025); feature parity with the baseline plugin profile still closing. |
+| ProperDocs + MaterialX | Approved fallback engine | Drop-in continuation fork of MkDocs 1.6.x + Material (Mar 2026); available today via `engine=properdocs`; mike versioning unverified. See "Engines and succession". |
 
 ---
 
@@ -1143,4 +1165,7 @@ Build policy:
 - mkdocs-macros-plugin: https://mkdocs-macros-plugin.readthedocs.io/
 - mkdocs-monorepo-plugin: https://github.com/backstage/mkdocs-monorepo-plugin
 - MaterialX: https://github.com/jaywhj/mkdocs-materialx
+- ProperDocs: https://properdocs.org/ · https://github.com/ProperDocs/properdocs
 - ProperDocs organization discussions: https://github.com/orgs/ProperDocs/discussions
+- ProperDocs fork background: https://fpgmaas.com/blog/collapse-of-mkdocs/
+- mike + ProperDocs compatibility (open): https://github.com/jimporter/mike/issues/259

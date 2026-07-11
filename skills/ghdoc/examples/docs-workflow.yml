@@ -1,11 +1,14 @@
-# Organization documentation standard — GitHub Actions workflow
+# Organization documentation standard — GitHub Actions workflow (unversioned docs)
 # File: .github/workflows/docs.yml
 #
 # Triggers: push to main (build + deploy), pull_request (build-only check).
-# Deploys to GitHub Pages via gh-deploy.
+# Deploys via the official GitHub Pages actions (artifact upload), NOT gh-deploy.
 #
 # Prerequisites:
 #   GitHub repo Settings → Pages → Source → GitHub Actions
+#
+# For versioned docs (mike), use docs-versioned-workflow.yml instead — it deploys
+# to a gh-pages branch and requires Source → Deploy from a branch.
 
 name: docs
 
@@ -23,13 +26,16 @@ on:
       - 'mkdocs.yml'
       - 'requirements-docs.txt'
 
-# Required for mkdocs gh-deploy to push the built site to gh-pages branch
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  docs:
-    name: Build and deploy docs
+  build:
+    name: Build docs
     runs-on: ubuntu-latest
 
     steps:
@@ -51,11 +57,34 @@ jobs:
 
       - name: Build docs (strict)
         run: mkdocs build --strict
-        env:
-          CI: true
 
-      - name: Deploy to GitHub Pages
+      # External links only — internal links are already covered by --strict.
+      # Non-blocking: external sites break for reasons unrelated to this repo.
+      - name: Check external links
+        uses: lycheeverse/lychee-action@v2
+        continue-on-error: true
+        with:
+          args: --no-progress --include-fragments site/
+
+      - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: mkdocs gh-deploy --force
-        env:
-          CI: true
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
