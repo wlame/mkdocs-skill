@@ -13,11 +13,11 @@ Parse `$ARGUMENTS` for these optional overrides:
 - `color-scheme=<name>` — override the default color scheme (indigo | teal | blue-grey | deep-purple | orange)
 - `versioned=yes` — enable mike versioning
 - `api=yes` — force API reference generation even if not auto-detected
-- `engine=<name>` — site generator engine (default `mkdocs`). See the Engines table in
-  `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/references/mkdocs-standard.md` — `properdocs` swaps in the
-  ProperDocs fork + MaterialX theme; all generated files use the engine's package, CLI, and theme
-  names from that table. Warn the user that `engine=properdocs` + `versioned=yes` is unsupported
-  (mike compatibility unverified as of 2026-07).
+- `engine=<name>` — site generator engine (default `mkdocs`). See the **Engines** table in
+  `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/SKILL.md` (single source of truth) — `properdocs` swaps in
+  the ProperDocs fork + MaterialX theme; all generated files use the engine's packages, CLI,
+  config filename, and theme from that table. Warn the user that `engine=properdocs` +
+  `versioned=yes` is unsupported (mike compatibility unverified as of 2026-07).
 - `override: <text>` — free-form instructions that override any defaults
 
 **Plugin file paths**: every reference below to `${CLAUDE_PLUGIN_ROOT}/...` is a file inside this
@@ -120,54 +120,18 @@ The concept inventory and existing docs sections are both critical — they are 
 
 **Goal**: Propose a documentation structure tailored to what was found, and get user approval before writing anything.
 
-Based on Phase 1 findings, determine which page sections apply:
-
-**Always required:**
-- `index.md` — landing page with tagline, key features, quick-start snippet, links
-- `about.md` — project purpose, design philosophy, why it exists, comparison to alternatives
-- `getting-started.md` — fastest path from zero to first working result
-- `use-cases/index.md` — overview of common use cases
-- `faq.md` — frequently asked questions
-- `troubleshooting.md` — known issues, error messages, diagnostic steps
-- `changelog.md` — version history
-- `contributing.md` — how to contribute
-
-**Include if CLI tool detected:**
-- `reference/cli.md` (or `reference/cli/<command>.md` — one page per top-level command if more than 6 commands)
-
-**Include if REST API detected:**
-- `reference/api.md` — all endpoints with examples, or per-resource pages if > 10 endpoints
-
-**Include if configuration is non-trivial (more than 5 config keys):**
-- `reference/configuration.md` — all config options, types, defaults, env vars
-
-**Include if architecture/data flow is documented:**
-- `concepts/architecture.md` — system design, component roles
-- `concepts/data-flow.md` — how data moves through the system with Mermaid diagrams
-
-**Include if deployment/ops is relevant:**
-- `operations/deployment.md` — install, docker, k8s, production checklist
-- `operations/monitoring.md` — metrics, logs, health checks, observability
+Read the **Unified Page Structure** table in `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/SKILL.md` — it is
+the single source of truth for which pages exist and their inclusion conditions (including the
+split thresholds for large CLI/API surfaces). Apply each row's "When" condition to the Phase 1
+findings to derive the page set. Do not maintain a separate page list here.
 
 **Use cases: propose specific slugs** (2–5 pages) based on Phase 1 findings:
 - For each proposed use case: show `use-cases/<slug>.md` — one-line scenario description
 
-**Include if Python package with public API:**
-- `reference/api-reference.md` — generated from docstrings via mkdocstrings
-
-Present the proposed structure to the user as a concrete nav tree with real slug names for the use cases based on what was found. Show which pages are required vs. detected as needed.
-
-**Color scheme options** — present all five with a brief personality note:
-
-| Option | Primary | Accent | Personality |
-|--------|---------|--------|-------------|
-| `indigo` **(default)** | indigo | blue | Professional, trustworthy |
-| `teal` | teal | cyan | Modern, clean, technical |
-| `blue-grey` | blue-grey | blue | Muted, sophisticated |
-| `deep-purple` | deep purple | purple | Creative, bold |
-| `orange` | orange | amber | Energetic, open-source |
-
-If `color-scheme=<name>` was passed in `$ARGUMENTS`, highlight it as pre-selected.
+Present the proposed structure to the user as a concrete nav tree with real slug names for the use
+cases based on what was found. Show which pages are always-required vs. detected as needed, and
+note any conditional pages that were *excluded* and why (e.g. "faq.md skipped — no issue tracker
+history to draw real questions from").
 
 **If existing docs were found**, include this notice before asking for confirmation:
 
@@ -177,21 +141,27 @@ If `color-scheme=<name>` was passed in `$ARGUMENTS`, highlight it as pre-selecte
 >
 > Any non-obvious knowledge (design rationale, edge cases, operational notes) found in existing pages is recorded in `.claude/ghdoc-analysis.md` and will be given to the content agents. If an existing page maps directly to a new page, its content takes priority over generated boilerplate.
 
-**STOP and wait for user confirmation.** Ask:
+**STOP and wait for user confirmation.** First discuss the nav tree in prose:
 1. Does the proposed nav structure look right? Any pages to add, remove, or rename?
-2. Are the proposed use-case slugs correct? Add, remove, or rename any?
-3. Which color scheme would you like?
-4. Do you have a logo file path to use? (otherwise a text logo will be used)
-5. Any other overrides or instructions?
+2. Are the proposed use-case slugs correct?
+3. Do you have a logo file path to use? (otherwise a text logo will be used)
 
-Do NOT proceed to Phase 3 until the user explicitly confirms.
+Then use the **AskUserQuestion tool** for the discrete choices (skip any already fixed by
+`$ARGUMENTS`):
+- **Color scheme** — offer the 4 schemes from the SKILL.md color table whose personality best fits
+  the project (mark the best fit "(Recommended)"); the remaining scheme is reachable via "Other".
+- **Versioning** — `mike` versioned docs vs. always-latest, with a one-line trade-off each
+  (only ask when releases/tags were detected in Phase 1).
+
+Do NOT proceed to Phase 3 until the user explicitly confirms the structure and the choices are
+recorded. These recorded choices are stamped into the state marker in Phase 3a.
 
 ---
 
 ## Phase 3: Infrastructure Files
 
 **Start by reading these plugin files** (do this before writing any files):
-- Read `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/references/mkdocs-standard.md` — for the Engines table, plugin versions, and feature flags
+- Read `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/SKILL.md` — for the Engines table and baseline plugin set
 - Read `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/references/color-schemes.md` — for the exact Material palette YAML for the selected color scheme
 - Read `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/examples/mkdocs.yml` — the baseline config template
 - Read `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/examples/requirements-docs.txt` — the pinned dependency template
@@ -306,11 +276,10 @@ Launch parallel agents, one per major section. Each agent prompt must:
     - If CHANGELOG.md exists at repo root, import its content into docs/changelog.md
     - If CONTRIBUTING.md exists at repo root, link to it from docs/contributing.md rather than duplicating
 
-Each agent writes directly to disk. Content rules for every agent:
-- Use real names, flags, keys, and endpoints from the analysis — never invent
-- Mark unknown content as `<!-- TODO: add <description> -->` — never fabricate facts
-- At least one `!!! tip` and one `!!! warning` per page
-- Add `## Related pages` section at the bottom of each page with 2–4 links
+Each agent writes directly to disk. Every agent prompt must also include:
+"Follow the **Content Writing Rules** section of `${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/SKILL.md`
+exactly — read it before writing." Those rules (single source of truth) cover accuracy, TODO
+markers, admonition usage, and Related-pages sections; do not paraphrase them into agent prompts.
 
 **After all agents complete**: verify every file listed in `mkdocs.yml` nav exists on disk. List any missing files and create stub pages for them rather than leaving a broken nav.
 
@@ -411,16 +380,12 @@ Finally, delete `.claude/ghdoc-analysis.md` (it was a working file, not part of 
 
 ## Content Principles
 
-Apply these to every generated page:
+The canonical content rules live in the **Content Writing Rules** section of
+`${CLAUDE_PLUGIN_ROOT}/skills/ghdoc/SKILL.md` — apply them to every generated page. The only
+principles specific to this command's orchestration:
 
-- Write from actual source analysis — no generic boilerplate.
-- Every code example must be copy-pasteable using real command/function names.
-- CLI flags must match source exactly (read from `.claude/ghdoc-analysis.md`, not from memory).
-- Config keys must match actual schemas exactly.
+- Write from the actual `.claude/ghdoc-analysis.md` findings — no generic boilerplate, nothing
+  from memory.
 - Use Mermaid diagrams for any architecture with more than 2 components.
-- Prefer tabs for the same operation across install methods, OS, or language variants.
-- Prefer `???` collapsible blocks for exhaustive parameter lists — show the 3 most common inline.
-- Mark unknown content `<!-- TODO: add <description> -->` — never invent facts.
-- `!!! tip` for non-obvious best practices; `!!! warning` for known gotchas.
 - Keep contributing.md short — link to repo-root CONTRIBUTING.md if it exists.
 - Import changelog from repo-root CHANGELOG.md via snippet reference if it exists.

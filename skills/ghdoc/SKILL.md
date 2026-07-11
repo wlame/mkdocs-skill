@@ -33,25 +33,28 @@ succession" section of `references/mkdocs-standard.md` for the full context and 
 
 ## Unified Page Structure
 
-Every repository's docs must contain these sections (adapt to what applies):
+Every repository's docs must contain these sections (adapt to what applies). This table is the
+**single source of truth** for which pages exist and when — commands and agents decide inclusion
+from the "When" column, not from their own lists:
 
-| Page | Purpose | Always? |
+| Page | Purpose | When |
 |---|---|---|
-| `index.md` | Tagline, key features, quick-start snippet, nav links | Yes |
-| `about.md` | Purpose, design goals, why it exists, alternatives comparison | Yes |
-| `getting-started.md` | Zero-to-working in < 10 minutes | Yes |
-| `use-cases/` | 2–5 real-world scenarios with full walkthroughs | Yes |
-| `concepts/architecture.md` | System components, responsibilities, Mermaid diagram | If non-trivial |
-| `concepts/data-flow.md` | How data moves through the system, sequence diagrams | If applicable |
-| `reference/cli.md` | Every command, subcommand, flag, with examples | If CLI tool |
-| `reference/api.md` | Every endpoint: method, path, request/response, auth | If REST API |
-| `reference/configuration.md` | Every config key: type, default, env var, example | If configurable |
+| `index.md` | Tagline, key features, quick-start snippet, nav links | Always |
+| `about.md` | Purpose, design goals, why it exists, alternatives comparison | Always |
+| `getting-started.md` | Zero-to-working in < 10 minutes | Always |
+| `use-cases/` | 2–5 real-world scenarios with full walkthroughs (`index.md` + one page per scenario) | Always |
+| `concepts/architecture.md` | System components, responsibilities, Mermaid diagram | If more than 2 components |
+| `concepts/data-flow.md` | How data moves through the system, sequence diagrams | If data flow is non-trivial |
+| `reference/cli.md` | Every command, subcommand, flag, with examples | If CLI tool; split into `reference/cli/<command>.md` when > 6 top-level commands |
+| `reference/api.md` | Every endpoint: method, path, request/response, auth | If REST API; split per-resource when > 10 endpoints |
+| `reference/configuration.md` | Every config key: type, default, env var, example | If more than 5 config keys |
+| `reference/api-reference.md` | Generated from docstrings via mkdocstrings | If Python package with public API |
 | `operations/deployment.md` | Install, Docker, k8s, production checklist | If deployable |
 | `operations/monitoring.md` | Metrics, logs, health checks, alerts | If observable |
-| `faq.md` | Top 10 questions with clear answers | Yes |
-| `troubleshooting.md` | Error messages verbatim + fix steps | Yes |
-| `changelog.md` | Version history (import from CHANGELOG.md if it exists) | Yes |
-| `contributing.md` | How to contribute, dev setup, PR process | Yes |
+| `faq.md` | Real questions with clear answers | Only if real questions exist (GitHub issues/discussions, support history, or user-provided) — never invent questions |
+| `troubleshooting.md` | Error messages verbatim + fix steps | If real error messages/failure modes were found in source or issues |
+| `changelog.md` | Version history (import from CHANGELOG.md if it exists) | Always |
+| `contributing.md` | How to contribute, dev setup, PR process | Always |
 
 ## Page Content Requirements
 
@@ -152,16 +155,22 @@ sequenceDiagram
 
 ## Content Writing Rules
 
+These rules are the **single source of truth** for page content quality — content agents read this
+section directly rather than receiving paraphrased copies:
+
 - Every code example must be copy-pasteable with real command/function names from the source.
 - CLI flags must be verbatim from source code — never invented.
 - Config keys must match actual config schemas exactly.
 - Mark unknown content as `<!-- TODO: add <description> -->` — never invent facts.
-- Use `!!! tip` for non-obvious best practices (at least one per page).
-- Use `!!! warning` for known gotchas (at least one per page).
+- Use `!!! tip` for non-obvious best practices and `!!! warning` for known gotchas — **only where
+  a genuine one exists**. Never manufacture a tip or warning to decorate a page; a fabricated
+  admonition is worse than none.
 - Use `!!! note` for important context that isn't a warning.
 - Use `???` (collapsible) for exhaustive parameter lists — show the 3 most common inline.
 - Use tabbed content for OS-specific or method-specific variants.
 - Add a `## Related pages` section at the bottom linking to 2–4 related pages.
+- FAQ and troubleshooting entries must come from real sources (issues, discussions, error strings
+  in code, user input) — an invented "frequently asked question" is a fact fabrication.
 
 ## Additional Resources
 

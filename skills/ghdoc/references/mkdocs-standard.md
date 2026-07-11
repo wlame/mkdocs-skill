@@ -54,13 +54,16 @@ Therefore, the recommended strategy is:
 ## Engines and succession
 
 The standard treats the site generator as data — one row per engine, consumed by all generated
-files (mkdocs.yml theme name, requirements, workflow, just recipes):
+files (config theme name, requirements, workflow, just recipes). **The operative table (packages,
+CLI binary, config filename, theme name per engine) lives in `SKILL.md` — single source of truth;
+do not duplicate it here.** Status summary (2026-07):
 
-| Engine | pip packages | CLI binary | Config file | Theme name | Status (2026-07) |
-|---|---|---|---|---|---|
-| `mkdocs` (default) | `mkdocs==1.6.1` + `mkdocs-material==9.7.6` | `mkdocs` | `mkdocs.yml` | `material` | Baseline. Frozen upstream but pinned, proven, universally documented. |
-| `properdocs` | `properdocs==1.6.7` + `mkdocs-materialx==10.1.8` | `properdocs` | `properdocs.yml` (reads `mkdocs.yml` as deprecated fallback) | `materialx` | Opt-in fallback. Drop-in fork pair; smoke-tested (build --strict passes, 2026-07-11); **mike versioning unverified** (jimporter/mike#259); young project (first release 2026-03). |
-| Zensical | — | — | — | — | Watch only. Official successor from the Material team (Rust rewrite, Nov 2025); feature parity still closing; not plugin-compatible enough for the baseline profile yet. |
+- **`mkdocs` (default)** — baseline. Frozen upstream but pinned, proven, universally documented.
+- **`properdocs`** — opt-in fallback. Drop-in fork pair with MaterialX; smoke-tested
+  (`build --strict` passes, 2026-07-11); **mike versioning unverified** (jimporter/mike#259);
+  young project (first release 2026-03).
+- **Zensical** — watch only. Official successor from the Material team (Rust rewrite, Nov 2025);
+  feature parity still closing; not plugin-compatible enough for the baseline profile yet.
 
 **Expected eventual direction:** ProperDocs + MaterialX (or Zensical, if parity lands first) will
 replace the frozen baseline. Because ProperDocs is a drop-in fork, switching is a name swap in
@@ -486,29 +489,15 @@ extra:
 
 Use pinned dependencies for reproducible organization-wide builds.
 
-### Minimal `requirements-docs.in`
+### Canonical pin list
 
-```txt
-mkdocs==1.6.1
-mkdocs-material==9.7.6
+**The canonical pinned dependency list is `examples/requirements-docs.txt`** — single source of
+truth; this document deliberately does not repeat the versions. Rules for maintaining it:
 
-mkdocstrings==1.0.5
-mkdocstrings-python==2.0.5
-mkdocs-autorefs==1.4.4
-mkdocs-gen-files==0.6.1
-mkdocs-literate-nav==0.6.3
-mkdocs-section-index==0.3.12
-
-mkdocs-git-revision-date-localized-plugin==1.5.3
-mkdocs-git-authors-plugin==0.10.0
-mkdocs-redirects==1.2.3
-mkdocs-glightbox==0.5.2
-mkdocs-macros-plugin==1.5.0
-mike==2.2.0
-```
-
-Every entry is pinned — an unpinned line in a "pinned" file silently defeats the whole
-reproducibility goal. (Versions verified against PyPI 2026-07-11.)
+- every entry is pinned — an unpinned line in a "pinned" file silently defeats the whole
+  reproducibility goal;
+- bump versions deliberately: verify against PyPI, test a strict build, then update the file
+  (and its "verified" date comment) in one change.
 
 ### Better production approach
 
