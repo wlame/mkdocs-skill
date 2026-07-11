@@ -11,9 +11,9 @@
   "plugins": [
     {
       "name": "ghdoc",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "source": ".",
-      "description": "Generates a complete MkDocs documentation site for any GitHub repository — structured pages, Material theme, GitHub Actions CI, and GitHub Pages setup"
+      "description": "Generates and maintains opinionated MkDocs documentation sites for GitHub repositories — structured pages, Material theme, GitHub Actions CI, GitHub Pages setup, plus audit and update commands for org-wide documentation consistency."
     }
   ]
 }

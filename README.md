@@ -1,9 +1,20 @@
-# ghdoc — MkDocs documentation site generator (Claude Code plugin)
+# ghdoc — MkDocs documentation generator & maintainer (Claude Code plugin)
 
-A Claude Code plugin that generates a complete, opinionated documentation site for any GitHub
-repository: structured pages written from real source analysis, Material theme, GitHub Actions CI,
-and GitHub Pages deployment. Its purpose is a **unified documentation experience across all repos**
-— same structure, same look, same build pipeline.
+A Claude Code plugin that generates **and maintains** a complete, opinionated documentation site
+for any GitHub repository: structured pages written from real source analysis, Material theme,
+GitHub Actions CI, and GitHub Pages deployment. Its purpose is a **unified documentation
+experience across all repos** — same structure, same look, same build pipeline — enforced over
+time, not just at scaffold time:
+
+| Command | Purpose |
+|---|---|
+| `/ghdoc` | Generate a full docs site (phased, with confirmation checkpoints and a source fact-check pass) |
+| `/ghdoc-update` | Refresh an existing site after code changes — touches only stale pages, preserves prose |
+| `/ghdoc-audit` | Read-only compliance check against the standard; one-line verdict, bulk-runnable across repos |
+
+Generated sites carry a **state marker** (first line of `mkdocs.yml`) recording the skill version,
+engine, color scheme, and versioning mode — so updates and audits are deterministic and re-runs
+never re-ask settled questions.
 
 ## What it generates
 
@@ -27,13 +38,20 @@ Add the marketplace and install the plugin in Claude Code:
 
 ## Usage
 
-In any repository, run:
+In a repository without docs, run:
 
 ```
 /ghdoc
 ```
 
-Optional arguments:
+In a repository that already has a ghdoc site:
+
+```
+/ghdoc-audit     # where does it drift from the standard?
+/ghdoc-update    # bring pages and infrastructure back in sync
+```
+
+Optional `/ghdoc` arguments:
 
 | Argument | Values | Default | Purpose |
 |---|---|---|---|
@@ -73,12 +91,21 @@ migration triggers and the quarterly re-check checklist live in
 ## Repository layout
 
 ```
-.claude-plugin/       plugin + marketplace manifests
-commands/ghdoc.md     the /ghdoc command (phased generation workflow)
-skills/ghdoc/         the skill: org standard, palettes, page templates, examples
-  references/         mkdocs-standard.md, unified-structure.md, color-schemes.md, page-templates.md
-  examples/           mkdocs.yml, requirements-docs.txt, docs-workflow.yml, docs-versioned-workflow.yml
+.claude-plugin/            plugin + marketplace manifests
+commands/
+  ghdoc.md                 /ghdoc — phased full-site generation
+  ghdoc-update.md          /ghdoc-update — targeted maintenance
+  ghdoc-audit.md           /ghdoc-audit — read-only compliance report
+skills/ghdoc/
+  SKILL.md                 quick reference: engines, page structure, content rules, state marker
+  references/              standard rationale, page specs, palettes, templates,
+                           repo-analysis / fact-check / audit-checklist procedures
+  examples/                mkdocs.yml, requirements-docs.txt, both CI workflows
 ```
+
+Every fact lives in exactly one file (the Engines table in `SKILL.md`, pins in
+`examples/requirements-docs.txt`, palettes in `references/color-schemes.md`, …) and everything
+else points at it — see `AGENTS.md` for the full ownership map.
 
 ## License
 

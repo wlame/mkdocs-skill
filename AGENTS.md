@@ -10,21 +10,44 @@ code — everything is Markdown instructions, YAML templates, and manifests.
 
 ## Core pieces and how they relate
 
-- `commands/ghdoc.md` — the `/ghdoc` slash command: a 6-phase workflow (existing-docs pre-check →
-  repo analysis via parallel Explore agents → structure proposal → infrastructure files → content
-  generation → cross-link + build verification). It **reads plugin files via
-  `${CLAUDE_PLUGIN_ROOT}/...`** — never as repo-relative paths, because the command executes inside
-  a *target* repository, not this one. Keep every plugin-file reference prefixed.
-- `skills/ghdoc/SKILL.md` — the skill Claude loads for docs-standard knowledge; holds the quick
-  reference and the **Engines table** (site generator as data: package, CLI, theme per engine).
-- `skills/ghdoc/references/` — the deep material: `mkdocs-standard.md` (the full org standard,
-  including "Engines and succession"), `unified-structure.md` (per-page content specs),
-  `color-schemes.md` (palette YAML), `page-templates.md` (fill-in templates).
-- `skills/ghdoc/examples/` — copy-verbatim templates: `mkdocs.yml`, `requirements-docs.txt`
-  (fully pinned — never add an unpinned line), `docs-workflow.yml` (unversioned; GitHub Pages
-  artifact deploy), `docs-versioned-workflow.yml` (mike; gh-pages branch deploy).
+- `commands/ghdoc.md` — `/ghdoc`: phased full-site generation (prior-generation pre-check →
+  existing-docs pre-check → repo analysis → structure proposal checkpoint → infrastructure →
+  content generation → cross-link + fact-check → build verification). Commands **read plugin
+  files via `${CLAUDE_PLUGIN_ROOT}/...`** — never as repo-relative paths, because they execute
+  inside a *target* repository, not this one. Keep every plugin-file reference prefixed.
+- `commands/ghdoc-update.md` — `/ghdoc-update`: maintenance. Drift detection (audit checklist +
+  fresh analysis diffed against current docs) → confirmed update plan → targeted patches
+  preserving prose → fact-check → build → marker refresh.
+- `commands/ghdoc-audit.md` — `/ghdoc-audit`: strictly read-only compliance report driven by the
+  audit checklist; never writes.
+- `skills/ghdoc/SKILL.md` — the skill Claude loads for docs-standard knowledge; owns the
+  operative tables (see ownership map below).
+- `skills/ghdoc/references/` — deep material and shared procedures (see ownership map).
+- `skills/ghdoc/examples/` — copy-verbatim templates (see ownership map).
 - `.claude-plugin/plugin.json` + `marketplace.json` — manifests; keep versions in sync with
   `SKILL.md` frontmatter.
+
+## Ownership map (single source of truth per fact)
+
+Every operative fact is owned by exactly one file; everything else must point, never copy.
+When editing, change the owner and fix pointers — never re-state a fact in a second file:
+
+| Fact | Owner |
+|---|---|
+| Engines table (packages, CLI, config filename, theme) | `SKILL.md` |
+| Unified page structure + inclusion conditions | `SKILL.md` |
+| Content writing rules | `SKILL.md` |
+| State marker format | `SKILL.md` |
+| Dependency pins | `examples/requirements-docs.txt` |
+| CI workflows (both Pages modes) | `examples/docs-workflow.yml`, `examples/docs-versioned-workflow.yml` |
+| Config feature flags / extensions baseline | `examples/mkdocs.yml` |
+| Palette YAML per scheme | `references/color-schemes.md` |
+| Per-page content specs | `references/unified-structure.md` |
+| Page markdown templates | `references/page-templates.md` |
+| Repo-analysis agent prompts + analysis file format | `references/repo-analysis.md` |
+| Fact-check procedure | `references/fact-check.md` |
+| Audit checks | `references/audit-checklist.md` |
+| Standard rationale, governance, succession narrative | `references/mkdocs-standard.md` |
 
 ## Key invariants (easy to get wrong)
 
@@ -38,8 +61,14 @@ code — everything is Markdown instructions, YAML templates, and manifests.
    cairo libs; enabling it without them breaks CI.
 4. **Generated working files go to `.claude/ghdoc-analysis.md`** in target repos (gitignored),
    never the repo root.
-5. **Engine choice is data.** Anything engine-specific (package, CLI binary, theme name) must come
-   from the Engines table in `SKILL.md` / `mkdocs-standard.md`, not be hardcoded in prose.
+5. **Engine choice is data.** Anything engine-specific (package, CLI binary, config filename,
+   theme name) must come from the Engines table in `SKILL.md`, not be hardcoded in prose.
+6. **The state marker is the contract between commands.** `/ghdoc` writes it (first line of the
+   site config), `/ghdoc-update` reads and refreshes it, `/ghdoc-audit` checks it. Changing its
+   format means updating all three plus the SKILL.md definition.
+7. **`/ghdoc-audit` never writes.** Any fix, however trivial, belongs to `/ghdoc-update`.
+8. **Content agents must not fabricate.** Tips/warnings only where genuine; FAQ/troubleshooting
+   only from real sources — the Content Writing Rules in `SKILL.md` are explicit about this.
 
 ## Succession watch (check when touching the standard)
 

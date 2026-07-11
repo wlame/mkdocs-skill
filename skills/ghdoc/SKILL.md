@@ -1,7 +1,7 @@
 ---
 name: ghdoc
-description: This skill should be used when the user asks to "add documentation", "set up docs", "create a docs site", "add mkdocs", "generate github pages docs", "scaffold documentation", "add a documentation site for github pages", or mentions wanting MkDocs, Material theme, or unified documentation. Provides the organization documentation standard, unified page structure, color scheme options, and page templates for generating complete documentation sites.
-version: 1.1.0
+description: This skill should be used when the user asks to "add documentation", "set up docs", "create a docs site", "add mkdocs", "generate github pages docs", "scaffold documentation", "update the docs", "refresh documentation", "audit docs", "check docs compliance", or mentions wanting MkDocs, ProperDocs, Material theme, or unified documentation. Provides the organization documentation standard, unified page structure, color schemes, page templates, audit checklist, and maintenance procedures for generating and maintaining documentation sites.
+version: 1.2.0
 ---
 
 # ghdoc — Organization Documentation Standard
@@ -191,10 +191,14 @@ section directly rather than receiving paraphrased copies:
 
 ## Additional Resources
 
-- **`references/mkdocs-standard.md`** — full organization MkDocs standard with all plugin configs and CI workflow
+- **`references/mkdocs-standard.md`** — full organization standard: rationale, governance, engines-and-succession narrative
 - **`references/unified-structure.md`** — detailed content spec for each page type
 - **`references/color-schemes.md`** — full Material palette configurations for each color scheme
 - **`references/page-templates.md`** — ready-to-fill markdown templates for every page type
-- **`examples/mkdocs.yml`** — complete mkdocs.yml with all options
-- **`examples/requirements-docs.txt`** — pinned dependency list
-- **`examples/docs-workflow.yml`** — GitHub Actions workflow for building and deploying
+- **`references/repo-analysis.md`** — shared repository-analysis procedure (used by /ghdoc and /ghdoc-update)
+- **`references/fact-check.md`** — procedure for verifying documented claims against source
+- **`references/audit-checklist.md`** — the compliance checks behind /ghdoc-audit
+- **`examples/mkdocs.yml`** — complete config template with all options (canonical feature flags)
+- **`examples/requirements-docs.txt`** — canonical pinned dependency list
+- **`examples/docs-workflow.yml`** — CI workflow, unversioned docs (Pages artifact deploy)
+- **`examples/docs-versioned-workflow.yml`** — CI workflow, versioned docs (mike + gh-pages branch)
